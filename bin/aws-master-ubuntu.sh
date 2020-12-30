@@ -16,4 +16,5 @@ done									;
 touch /tmp/microstack_install_finished
 touch /tmp/microstack_init
 microstack init --auto --control                                        ;
+touch /tmp/microstack_init_finished
 #########################################################################
