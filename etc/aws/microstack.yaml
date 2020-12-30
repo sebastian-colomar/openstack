@@ -1,0 +1,778 @@
+#########################################################################
+#      Copyright (C) 2020        Sebastian Francisco Colomar Bauza      #
+#      SPDX-License-Identifier:  GPL-2.0-only                           #
+#########################################################################
+
+---
+
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: This template creates a new VPC and deploys a production-grade HA cluster in AWS with MICROSTACK
+
+#============================================================
+# UI Definition
+#============================================================
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Cluster Common Configuration
+        Parameters:
+          - BranchOpenstackAWS
+          - NodeInstallUrlPath
+          - NodeInstallUrlFile
+      -
+        Label:
+          default: Cluster Master Configuration
+        Parameters:
+          - InstanceMasterImageId
+          - InstanceMasterInstanceType
+      -
+        Label:
+          default: Cluster Worker Configuration
+        Parameters:
+          - InstanceWorkerImageId
+          - InstanceWorkerInstanceType
+      -
+        Label:
+          default: Network Configuration
+        Parameters:
+          - HostedZoneName
+          - IpProtocolListenerWorker1
+          - HttpCodeTargetGroupWorker1
+          - PortListenerWorker1
+          - PortListenerWorker1QA
+          - PortTargetGroupWorker1A
+          - PortTargetGroupWorker1B
+          - PrivateIpAddressInstanceMaster1
+          - PrivateIpAddressInstanceMaster2
+          - PrivateIpAddressInstanceMaster3
+          - ProtocolListenerWorker1
+          - ProtocolTargetGroupWorker1
+          - RecordSetNameKube
+          - RecordSetName1
+          - RecordSetName2
+          - RecordSetName3
+          - SecurityGroupCidrIpWorker1
+          - SubnetCidrBlockPrivate1
+          - SubnetCidrBlockPrivate2
+          - SubnetCidrBlockPrivate3
+          - SubnetCidrBlockPublic1
+          - SubnetCidrBlockPublic2
+          - SubnetCidrBlockPublic3
+          - VPCCidrBlock
+      -
+        Label:
+          default: Security
+        Parameters:
+          - Identifier
+          - KeyName
+          
+    ParameterLabels:
+      BranchOpenstackAWS:
+        default: The branch of the git repo to download the script for the common install of the nodes
+      HostedZoneName:
+        default: The name of the hosted zone that you want to create records in
+      Identifier:
+        default: The Identifier of the certificate you want to use
+      InstanceMasterImageId:
+        default: AMI to use for Cluster Master Instances
+      InstanceMasterInstanceType:
+        default: Cluster Master Instance Size
+      InstanceWorkerImageId:
+        default: AMI to use for Cluster Worker Instances
+      InstanceWorkerInstanceType:
+        default: Cluster Worker Instance Size
+      IpProtocolListenerWorker1:
+        default: The IP protocol for Listener Worker 1
+      KeyName:
+        default: The name of the key pair
+      HttpCodeTargetGroupWorker1:
+        default: The HTTP codes to use when checking for a successful response from Worker Group 1
+      NodeInstallUrlPath:
+        default: The URL path to download the script for the common install of the nodes
+      NodeInstallUrlFile:
+        default: The name of the script for the common install of the nodes
+      PortListenerWorker1:
+        default: The listening port for Listener Worker 1
+      PortListenerWorker1QA:
+        default: The listening port for Listener Worker 1 - QA
+      PortTargetGroupWorker1A:
+        default: The internal listening port for Target Group Worker 1 - Deployment A
+      PortTargetGroupWorker1B:
+        default: The internal listening port for Target Group Worker 1 - Deployment B
+      PrivateIpAddressInstanceMaster1:
+        default: The private IP address for Master 1
+      PrivateIpAddressInstanceMaster2:
+        default: The private IP address for Master 2
+      PrivateIpAddressInstanceMaster3:
+        default: The private IP address for Master 3
+      ProtocolListenerWorker1:
+        default: The protocol for Listener Worker 1
+      ProtocolTargetGroupWorker1:
+        default: The internal protocol for Target Group Worker 1
+      RecordSetNameKube:
+        default: The name of the Record Set for Kubernetes API Server
+      RecordSetName1:
+        default: The name of the Record Set for service 1
+      RecordSetName2:
+        default: The name of the Record Set for service 2
+      RecordSetName3:
+        default: The name of the Record Set for service 3
+      SecurityGroupCidrIpWorker1:
+        default: Allowed CIDR for ALB 1 Cluster Worker Access
+      SubnetCidrBlockPrivate1:
+        default: Private Subnet 1 CIDR
+      SubnetCidrBlockPrivate2:
+        default: Private Subnet 2 CIDR
+      SubnetCidrBlockPrivate3:
+        default: Private Subnet 3 CIDR
+      SubnetCidrBlockPublic1:
+        default: Public Subnet 1 CIDR
+      SubnetCidrBlockPublic2:
+        default: Public Subnet 2 CIDR
+      SubnetCidrBlockPublic3:
+        default: Public Subnet 3 CIDR
+      VPCCidrBlock:
+        default: VPC CIDR
+                
+Parameters:
+
+  BranchOpenstackAWS:
+    Default: "main"
+    Description: >
+      The branch of the git repo to download the script for the common install of the nodes.
+    Type: String
+    
+  HostedZoneName:
+    Default: 'sebastian-colomar.com'
+    Description: >
+      The name of the hosted zone that you want to create records in.
+    Type: String
+
+  Identifier:
+    Default: '31ea6050-d1a0-4e91-a37b-ed862904188c'
+    Description: >
+      The Identifier of the certificate you want to use.
+    Type: String
+
+  InstanceMasterImageId:
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: >
+      Select AMI to use for the Cluster Master instances. 
+      When it's left blank, the default AMI for your AWS region will be used. 
+      When setting an AMI, it must be available in your current region.
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    
+  InstanceMasterInstanceType:
+    Default: 't2.micro'
+    Description: >
+      Select Amazon EC2 instance type for the Cluster Master instances.
+    Type: String
+    
+  InstanceWorkerImageId:
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: >
+      Select AMI to use for the Cluster Worker instances. 
+      When it's left blank, the default AMI for your AWS region will be used. 
+      When setting an AMI, it must be available in your current region.
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    
+  InstanceWorkerInstanceType:
+    Default: 't2.micro'
+    Description: >
+      Select Amazon EC2 instance type for the Cluster Worker instances.
+    Type: String
+    
+  IpProtocolListenerWorker1:
+    Default: tcp
+    Description: >
+      The IP protocol for Listener Worker 1.
+    Type: String
+    
+  KeyName:
+    Default: 'cloud9_mumbai_mgmt'
+    Description: >
+      The name of the key pair. You can create a key pair using CreateKeyPair or ImportKeyPair.
+    Type: String
+    
+  HttpCodeTargetGroupWorker1:
+    Default: "200-399"
+    Description: >
+      The HTTP codes to use when checking for a successful response from Worker Group 1.
+    Type: String
+    
+  NodeInstallUrlPath:
+    Default: "https://github.com/secobau/docker-aws"
+    Description: >
+      The URL path to download the script for the common install of the nodes.
+    Type: String
+    
+  NodeInstallUrlFile:
+    Default: bin/aws-node-ami.sh
+    Description: >
+      The name of the script for the common install of the nodes.
+    Type: String
+    
+  PortListenerWorker1:
+    Default: 443
+    Description: >
+      The listening port for Listener Worker 1.
+    Type: Number
+    
+  PortListenerWorker1QA:
+    Default: 8443
+    Description: >
+      The listening port for Listener Worker 1 - QA.
+    Type: Number
+    
+  PortTargetGroupWorker1A:
+    Default: 30001
+    Description: >
+      The internal listening port for Target Group Worker 1 - Deployment A.
+    Type: Number
+    
+  PortTargetGroupWorker1B:
+    Default: 31001
+    Description: >
+      The internal listening port for Target Group Worker 1 - Deployment B.
+    Type: Number
+    
+  PrivateIpAddressInstanceMaster1:
+    Default: 10.168.1.100
+    Description: >
+      The private IP address for Master 1.
+    Type: String
+    
+  PrivateIpAddressInstanceMaster2:
+    Default: 10.168.3.100
+    Description: >
+      The private IP address for Master 2.
+    Type: String
+    
+  PrivateIpAddressInstanceMaster3:
+    Default: 10.168.5.100
+    Description: >
+      The private IP address for Master 3.
+    Type: String
+    
+  ProtocolListenerWorker1:
+    Default: HTTPS
+    Description: >
+      The protocol for Listener Worker 1.
+    Type: String
+    
+  ProtocolTargetGroupWorker1:
+    Default: HTTP
+    Description: >
+      The internal protocol for Target Group Worker 1.
+    Type: String
+
+  RecordSetNameKube:
+    Default: 'service-kube'
+    Description: >
+      The name of the Record Set for service 1.
+    Type: String
+  
+  RecordSetName1:
+    Default: service-1
+    Description: >
+      The name of the Record Set for service 1.
+    Type: String
+  
+  RecordSetName2:
+    Default: service-2
+    Description: >
+      The name of the Record Set for service 2.
+    Type: String
+
+  RecordSetName3:
+    Default: service-3
+    Description: >
+      The name of the Record Set for service 3.
+    Type: String
+    
+  SecurityGroupCidrIpWorker1:
+    Default: 0.0.0.0/0
+    Description: >
+      Allowed CIDR block for external web access to the Cluster Worker 1 Load Balancer. 
+      It defines the block of IPs that can access the Cluster Worker Load Balancer 1 and, consequently, the application servers. 
+      Set it to 0.0.0.0/0 to make it accessible from anywhere.
+    Type: String
+    
+  SubnetCidrBlockPrivate1:
+    Default: 10.168.1.0/24
+    Description: >
+      CIDR block for private subnet located in Availability Zone 1. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  SubnetCidrBlockPrivate2:
+    Default: 10.168.3.0/24
+    Description: >
+      CIDR block for private subnet located in Availability Zone 2. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  SubnetCidrBlockPrivate3:
+    Default: 10.168.5.0/24
+    Description: >
+      CIDR block for private subnet located in Availability Zone 3. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  SubnetCidrBlockPublic1:
+    Default: 10.168.2.0/24
+    Description: >
+      CIDR block for public (DMZ) subnet located in Availability Zone 1. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  SubnetCidrBlockPublic2:
+    Default: 10.168.4.0/24
+    Description: >
+      CIDR block for public (DMZ) subnet located in Availability Zone 2. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  SubnetCidrBlockPublic3:
+    Default: 10.168.6.0/24
+    Description: >
+      CIDR block for public (DMZ) subnet located in Availability Zone 3. 
+      All resources located on this subnet are provided an IP within this address block. 
+    Type: String
+    
+  VPCCidrBlock:
+    Default: 10.168.0.0/16
+    Description: >
+      CIDR block for the VPC. All the subnets and resources will have an IP within this address block.
+    Type: String
+    
+#============================================================
+# Resources
+#============================================================
+Resources:
+
+  EIP1:
+    Properties:
+      Domain: vpc
+    Type: AWS::EC2::EIP
+
+  EIP2:
+    Properties:
+      Domain: vpc
+    Type: AWS::EC2::EIP
+
+  EIP3:
+    Properties:
+      Domain: vpc
+    Type: AWS::EC2::EIP
+
+  InstanceMaster1:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceMasterImageId
+      InstanceType: !Ref InstanceMasterInstanceType
+      KeyName: !Ref KeyName
+      PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster1
+      SecurityGroupIds:
+        - !GetAtt VPC.DefaultSecurityGroup
+      SubnetId: !Ref SubnetPrivate1
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+            
+  InstanceMaster2:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceMasterImageId
+      InstanceType: !Ref InstanceMasterInstanceType
+      KeyName: !Ref KeyName
+      PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster2
+      SecurityGroupIds:
+        - !GetAtt VPC.DefaultSecurityGroup
+      SubnetId: !Ref SubnetPrivate2
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchDockerAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+
+  InstanceMaster3:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceMasterImageId
+      InstanceType: !Ref InstanceMasterInstanceType
+      KeyName: !Ref KeyName
+      PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster3
+      SecurityGroupIds:
+        - !GetAtt VPC.DefaultSecurityGroup
+      SubnetId: !Ref SubnetPrivate3
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchDockerAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+
+  InstanceProfile:
+    Properties:
+      Roles: [!Ref Role]
+    Type: AWS::IAM::InstanceProfile
+
+  InstanceWorker1:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceWorkerImageId
+      InstanceType: !Ref InstanceWorkerInstanceType
+      KeyName: !Ref KeyName
+      SubnetId: !Ref SubnetPrivate1
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+
+  InstanceWorker2:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceWorkerImageId
+      InstanceType: !Ref InstanceWorkerInstanceType
+      KeyName: !Ref KeyName
+      SubnetId: !Ref SubnetPrivate2
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+
+  InstanceWorker3:
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref InstanceWorkerImageId
+      InstanceType: !Ref InstanceWorkerInstanceType
+      KeyName: !Ref KeyName
+      SubnetId: !Ref SubnetPrivate3
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/sh
+            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+    Type: AWS::EC2::Instance
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  ListenerWorker1:
+    Properties: 
+      Certificates:
+        - CertificateArn: !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${Identifier}'
+      DefaultActions: 
+        - ForwardConfig:
+            TargetGroups:
+            - TargetGroupArn: !Ref TargetGroupWorker1A
+              Weight: 1
+            - TargetGroupArn: !Ref TargetGroupWorker1B
+              Weight: 0
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancerWorker1
+      Port: !Ref PortListenerWorker1
+      Protocol: !Ref ProtocolListenerWorker1
+    Type: AWS::ElasticLoadBalancingV2::Listener
+ 
+  ListenerWorker1QA:
+    Properties: 
+      Certificates:
+        - CertificateArn: !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${Identifier}'
+      DefaultActions: 
+        - ForwardConfig:
+            TargetGroups:
+            - TargetGroupArn: !Ref TargetGroupWorker1A
+              Weight: 0
+            - TargetGroupArn: !Ref TargetGroupWorker1B
+              Weight: 1
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancerWorker1
+      Port: !Ref PortListenerWorker1QA
+      Protocol: !Ref ProtocolListenerWorker1
+    Type: AWS::ElasticLoadBalancingV2::Listener
+ 
+  LoadBalancerWorker1:
+    Properties: 
+      SecurityGroups:
+        - !GetAtt VPC.DefaultSecurityGroup
+        - !Ref SecurityGroupWorker1
+        - !Ref SecurityGroupWorker1QA
+      Subnets: 
+        - !Ref SubnetPublic1
+        - !Ref SubnetPublic2
+        - !Ref SubnetPublic3
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+        
+  NatGateway1:
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      AllocationId: !GetAtt EIP1.AllocationId
+      SubnetId: !Ref SubnetPublic1
+    Type: AWS::EC2::NatGateway
+
+  NatGateway2:
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      AllocationId: !GetAtt EIP2.AllocationId
+      SubnetId: !Ref SubnetPublic2
+    Type: AWS::EC2::NatGateway
+
+  NatGateway3:
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      AllocationId: !GetAtt EIP3.AllocationId
+      SubnetId: !Ref SubnetPublic3
+    Type: AWS::EC2::NatGateway
+
+  RecordSet1:
+    Properties: 
+      AliasTarget: 
+        DNSName: !GetAtt LoadBalancerWorker1.DNSName
+        HostedZoneId: !GetAtt LoadBalancerWorker1.CanonicalHostedZoneID
+      HostedZoneName: !Sub '${HostedZoneName}.'
+      Name: !Sub '${RecordSetName1}.${HostedZoneName}'
+      Type: A
+    Type: AWS::Route53::RecordSet
+      
+  Role:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          -
+            Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+    Type: AWS::IAM::Role
+
+  RoutePrivate1:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref RouteTablePrivate1
+    Type: AWS::EC2::Route
+
+  RoutePrivate2:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+      RouteTableId: !Ref RouteTablePrivate2
+    Type: AWS::EC2::Route
+
+  RoutePrivate3:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway3
+      RouteTableId: !Ref RouteTablePrivate3
+    Type: AWS::EC2::Route
+
+  RoutePublic:
+    DependsOn: [VPCGatewayAttachment]
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTablePublic
+    Type: AWS::EC2::Route
+
+  RouteTablePrivate1:
+    Properties:
+      VpcId: !Ref VPC
+    Type: AWS::EC2::RouteTable
+
+  RouteTablePrivate2:
+    Properties:
+      VpcId: !Ref VPC
+    Type: AWS::EC2::RouteTable
+
+  RouteTablePrivate3:
+    Properties:
+      VpcId: !Ref VPC
+    Type: AWS::EC2::RouteTable
+
+  RouteTablePublic:
+    Properties:
+      VpcId: !Ref VPC
+    Type: AWS::EC2::RouteTable
+
+  SecurityGroupWorker1:
+    Properties:
+      GroupDescription: Allow access to the applications running on the cluster of workers for Service 1
+      SecurityGroupIngress:
+      - 
+        CidrIp: !Ref SecurityGroupCidrIpWorker1
+        FromPort: !Ref PortListenerWorker1
+        IpProtocol: !Ref IpProtocolListenerWorker1
+        ToPort: !Ref PortListenerWorker1
+      VpcId: !Ref VPC
+    Type: AWS::EC2::SecurityGroup
+      
+  SecurityGroupWorker1QA:
+    Properties:
+      GroupDescription: Allow access to the applications running on the cluster of workers for Service 1 - QA
+      SecurityGroupIngress:
+      - 
+        CidrIp: !Ref SecurityGroupCidrIpWorker1
+        FromPort: !Ref PortListenerWorker1QA
+        IpProtocol: !Ref IpProtocolListenerWorker1
+        ToPort: !Ref PortListenerWorker1QA
+      VpcId: !Ref VPC
+    Type: AWS::EC2::SecurityGroup
+      
+  SubnetPrivate1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPrivate1
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetPrivate2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPrivate2
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetPrivate3:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPrivate3
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetPublic1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPublic1
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetPublic2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPublic2
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetPublic3:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref SubnetCidrBlockPublic3
+      VpcId: !Ref VPC
+    Type: AWS::EC2::Subnet
+
+  SubnetRouteTableAssociationPrivate1:
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate1
+      SubnetId: !Ref SubnetPrivate1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  SubnetRouteTableAssociationPrivate2:
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate2
+      SubnetId: !Ref SubnetPrivate2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  SubnetRouteTableAssociationPrivate3:
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate3
+      SubnetId: !Ref SubnetPrivate3
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  SubnetRouteTableAssociationPublic1:
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      SubnetId: !Ref SubnetPublic1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  SubnetRouteTableAssociationPublic2:
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      SubnetId: !Ref SubnetPublic2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  SubnetRouteTableAssociationPublic3:
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      SubnetId: !Ref SubnetPublic3
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  TargetGroupWorker1A:
+    Properties: 
+      Matcher:
+        HttpCode: !Ref HttpCodeTargetGroupWorker1
+      Port: !Ref PortTargetGroupWorker1A
+      Protocol: !Ref ProtocolTargetGroupWorker1
+      Targets: 
+        -   Id: !Ref InstanceWorker1
+        -   Id: !Ref InstanceWorker2
+        -   Id: !Ref InstanceWorker3
+      TargetType: instance
+      VpcId: !Ref VPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
+  TargetGroupWorker1B:
+    Properties: 
+      Matcher:
+        HttpCode: !Ref HttpCodeTargetGroupWorker1
+      Port: !Ref PortTargetGroupWorker1B
+      Protocol: !Ref ProtocolTargetGroupWorker1
+      Targets: 
+        -   Id: !Ref InstanceWorker1
+        -   Id: !Ref InstanceWorker2
+        -   Id: !Ref InstanceWorker3
+      TargetType: instance
+      VpcId: !Ref VPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
+  VPC:
+    Properties:
+      CidrBlock: !Ref VPCCidrBlock
+    Type: "AWS::EC2::VPC"
+
+  VPCGatewayAttachment:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+    Type: AWS::EC2::VPCGatewayAttachment
