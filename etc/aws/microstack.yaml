@@ -134,12 +134,12 @@ Parameters:
     Type: String
 
   InstanceMasterImageId:
-    Default: '/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20201026'
+    Default: 'ami-0a4a70bd98c6d6441'
     Description: >
       Select AMI to use for the Cluster Master instances. 
       When it's left blank, the default AMI for your AWS region will be used. 
       When setting an AMI, it must be available in your current region.
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Type: String
     
   InstanceMasterInstanceType:
     Default: 'c5.xlarge'
@@ -149,12 +149,12 @@ Parameters:
     
   InstanceWorkerImageId:
     #Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
-    Default: '/aws/service/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20201026'
+    Default: 'ami-0a4a70bd98c6d6441'
     Description: >
       Select AMI to use for the Cluster Worker instances. 
       When it's left blank, the default AMI for your AWS region will be used. 
       When setting an AMI, it must be available in your current region.
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Type: String
     
   InstanceWorkerInstanceType:
     Default: 'c5.large'
