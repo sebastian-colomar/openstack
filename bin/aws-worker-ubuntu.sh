@@ -1,5 +1,5 @@
 #!/bin/sh -x
-#	./bin/aws-node-ubuntu.sh
+#	./bin/aws-worker-ubuntu.sh
 #########################################################################
 #      Copyright (C) 2020        Sebastian Francisco Colomar Bauza      #
 #      SPDX-License-Identifier:  GPL-2.0-only                           #
