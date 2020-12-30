@@ -21,7 +21,8 @@ Metadata:
         Parameters:
           - BranchOpenstackAWS
           - NodeInstallUrlPath
-          - NodeInstallUrlFile
+          - NodeInstallUrlFileMaster
+          - NodeInstallUrlFileWorker
       -
         Label:
           default: Cluster Master Configuration
@@ -82,8 +83,10 @@ Metadata:
         default: The HTTP codes to use when checking for a successful response from Master Group 1
       NodeInstallUrlPath:
         default: The URL path to download the script for the common install of the nodes
-      NodeInstallUrlFile:
-        default: The name of the script for the common install of the nodes
+      NodeInstallUrlFileMaster:
+        default: The name of the script for the common install of the Master nodes
+      NodeInstallUrlFileWorker:
+        default: The name of the script for the common install of the Worker nodes
       PortListenerMaster1:
         default: The listening port for Listener Master 1
       PortTargetGroupMaster1A:
@@ -180,10 +183,16 @@ Parameters:
       The URL path to download the script for the common install of the nodes.
     Type: String
     
-  NodeInstallUrlFile:
-    Default: bin/aws-node-ubuntu.sh
+  NodeInstallUrlFileMaster:
+    Default: bin/aws-master-ubuntu.sh
     Description: >
-      The name of the script for the common install of the nodes.
+      The name of the script for the common install of the Master nodes.
+    Type: String
+    
+  NodeInstallUrlFileWorker:
+    Default: bin/aws-worker-ubuntu.sh
+    Description: >
+      The name of the script for the common install of the Worker nodes.
     Type: String
     
   PortListenerMaster1:
@@ -311,8 +320,8 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+            #cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileMaster} && ./GitRepository/${NodeInstallUrlFileMaster} && rm --force --recursive GitRepository
     Type: AWS::EC2::Instance
             
   InstanceProfile:
@@ -330,8 +339,8 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+            #cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
     Type: AWS::EC2::Instance
 
   InstanceWorker2:
@@ -344,8 +353,8 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+            #cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
     Type: AWS::EC2::Instance
 
   InstanceWorker3:
@@ -358,8 +367,8 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
+            #cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
+            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
     Type: AWS::EC2::Instance
 
   InternetGateway:
