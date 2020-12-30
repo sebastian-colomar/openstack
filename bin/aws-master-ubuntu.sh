@@ -13,6 +13,7 @@ do 									\
   service snap.microstack.libvirtd status | grep running -q && break    ;
   sleep 10								;
 done									;
+touch /tmp/microstack_install_finished
 touch /tmp/microstack_init
 microstack init --auto --control                                        ;
 #########################################################################
