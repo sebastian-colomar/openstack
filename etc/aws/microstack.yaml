@@ -160,7 +160,7 @@ Parameters:
     Type: String
     
   InstanceWorkerInstanceType:
-    Default: 'c5.large'
+    Default: 'c5.xlarge'
     Description: >
       Select Amazon EC2 instance type for the Cluster Worker instances.
     Type: String
