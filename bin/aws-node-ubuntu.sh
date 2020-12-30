@@ -9,7 +9,7 @@ set +x 	&& test "$debug" = true	&& set -x				;
 snap install microstack --beta --devmode                                ;
 while true								;
 do 									\
-  service snap.microstack.nginx status | grep running -q && break	;
+  service snap.microstack.libvirtd status | grep running -q && break    ;
   sleep 10								;
 done									;
 #########################################################################
