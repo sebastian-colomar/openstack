@@ -7,7 +7,7 @@
 
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: This template creates a new VPC and deploys a production-grade HA cluster in AWS with MICROSTACK
+Description: This template creates a new VPC and deploys a HA Openstack cluster in AWS
 
 #============================================================
 # UI Definition
@@ -39,22 +39,15 @@ Metadata:
           default: Network Configuration
         Parameters:
           - HostedZoneName
-          - IpProtocolListenerWorker1
-          - HttpCodeTargetGroupWorker1
-          - PortListenerWorker1
-          - PortListenerWorker1QA
-          - PortTargetGroupWorker1A
-          - PortTargetGroupWorker1B
+          - IpProtocolListenerMaster1
+          - HttpCodeTargetGroupMaster1
+          - PortListenerMaster1
+          - PortTargetGroupMaster1A
           - PrivateIpAddressInstanceMaster1
-          - PrivateIpAddressInstanceMaster2
-          - PrivateIpAddressInstanceMaster3
-          - ProtocolListenerWorker1
-          - ProtocolTargetGroupWorker1
-          - RecordSetNameKube
+          - ProtocolListenerMaster1
+          - ProtocolTargetGroupMaster1
           - RecordSetName1
-          - RecordSetName2
-          - RecordSetName3
-          - SecurityGroupCidrIpWorker1
+          - SecurityGroupCidrIpMaster1
           - SubnetCidrBlockPrivate1
           - SubnetCidrBlockPrivate2
           - SubnetCidrBlockPrivate3
@@ -67,7 +60,6 @@ Metadata:
           default: Security
         Parameters:
           - Identifier
-          - KeyName
           
     ParameterLabels:
       BranchOpenstackAWS:
@@ -84,44 +76,28 @@ Metadata:
         default: AMI to use for Cluster Worker Instances
       InstanceWorkerInstanceType:
         default: Cluster Worker Instance Size
-      IpProtocolListenerWorker1:
-        default: The IP protocol for Listener Worker 1
-      KeyName:
-        default: The name of the key pair
-      HttpCodeTargetGroupWorker1:
-        default: The HTTP codes to use when checking for a successful response from Worker Group 1
+      IpProtocolListenerMaster1:
+        default: The IP protocol for Listener Master 1
+      HttpCodeTargetGroupMaster1:
+        default: The HTTP codes to use when checking for a successful response from Master Group 1
       NodeInstallUrlPath:
         default: The URL path to download the script for the common install of the nodes
       NodeInstallUrlFile:
         default: The name of the script for the common install of the nodes
-      PortListenerWorker1:
-        default: The listening port for Listener Worker 1
-      PortListenerWorker1QA:
-        default: The listening port for Listener Worker 1 - QA
-      PortTargetGroupWorker1A:
-        default: The internal listening port for Target Group Worker 1 - Deployment A
-      PortTargetGroupWorker1B:
-        default: The internal listening port for Target Group Worker 1 - Deployment B
+      PortListenerMaster1:
+        default: The listening port for Listener Master 1
+      PortTargetGroupMaster1A:
+        default: The internal listening port for Target Group Master 1 - Deployment A
       PrivateIpAddressInstanceMaster1:
         default: The private IP address for Master 1
-      PrivateIpAddressInstanceMaster2:
-        default: The private IP address for Master 2
-      PrivateIpAddressInstanceMaster3:
-        default: The private IP address for Master 3
-      ProtocolListenerWorker1:
-        default: The protocol for Listener Worker 1
-      ProtocolTargetGroupWorker1:
-        default: The internal protocol for Target Group Worker 1
-      RecordSetNameKube:
-        default: The name of the Record Set for Kubernetes API Server
+      ProtocolListenerMaster1:
+        default: The protocol for Listener Master 1
+      ProtocolTargetGroupMaster1:
+        default: The internal protocol for Target Group Master 1
       RecordSetName1:
         default: The name of the Record Set for service 1
-      RecordSetName2:
-        default: The name of the Record Set for service 2
-      RecordSetName3:
-        default: The name of the Record Set for service 3
-      SecurityGroupCidrIpWorker1:
-        default: Allowed CIDR for ALB 1 Cluster Worker Access
+      SecurityGroupCidrIpMaster1:
+        default: Allowed CIDR for ALB 1 Cluster Master Access
       SubnetCidrBlockPrivate1:
         default: Private Subnet 1 CIDR
       SubnetCidrBlockPrivate2:
@@ -158,7 +134,7 @@ Parameters:
     Type: String
 
   InstanceMasterImageId:
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Default: '/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20201026'
     Description: >
       Select AMI to use for the Cluster Master instances. 
       When it's left blank, the default AMI for your AWS region will be used. 
@@ -166,13 +142,14 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     
   InstanceMasterInstanceType:
-    Default: 't2.micro'
+    Default: 'c5.xlarge'
     Description: >
       Select Amazon EC2 instance type for the Cluster Master instances.
     Type: String
     
   InstanceWorkerImageId:
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    #Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Default: '/aws/service/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20201026'
     Description: >
       Select AMI to use for the Cluster Worker instances. 
       When it's left blank, the default AMI for your AWS region will be used. 
@@ -180,63 +157,45 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     
   InstanceWorkerInstanceType:
-    Default: 't2.micro'
+    Default: 'c5.large'
     Description: >
       Select Amazon EC2 instance type for the Cluster Worker instances.
     Type: String
     
-  IpProtocolListenerWorker1:
+  IpProtocolListenerMaster1:
     Default: tcp
     Description: >
-      The IP protocol for Listener Worker 1.
+      The IP protocol for Listener Master 1.
     Type: String
     
-  KeyName:
-    Default: 'cloud9_mumbai_mgmt'
-    Description: >
-      The name of the key pair. You can create a key pair using CreateKeyPair or ImportKeyPair.
-    Type: String
-    
-  HttpCodeTargetGroupWorker1:
+  HttpCodeTargetGroupMaster1:
     Default: "200-399"
     Description: >
-      The HTTP codes to use when checking for a successful response from Worker Group 1.
+      The HTTP codes to use when checking for a successful response from Master Group 1.
     Type: String
     
   NodeInstallUrlPath:
-    Default: "https://github.com/secobau/docker-aws"
+    Default: "https://github.com/academiaonline/openstack"
     Description: >
       The URL path to download the script for the common install of the nodes.
     Type: String
     
   NodeInstallUrlFile:
-    Default: bin/aws-node-ami.sh
+    Default: bin/aws-node-ubuntu.sh
     Description: >
       The name of the script for the common install of the nodes.
     Type: String
     
-  PortListenerWorker1:
+  PortListenerMaster1:
     Default: 443
     Description: >
-      The listening port for Listener Worker 1.
+      The listening port for Listener Master 1.
     Type: Number
     
-  PortListenerWorker1QA:
-    Default: 8443
+  PortTargetGroupMaster1A:
+    Default: 80
     Description: >
-      The listening port for Listener Worker 1 - QA.
-    Type: Number
-    
-  PortTargetGroupWorker1A:
-    Default: 30001
-    Description: >
-      The internal listening port for Target Group Worker 1 - Deployment A.
-    Type: Number
-    
-  PortTargetGroupWorker1B:
-    Default: 31001
-    Description: >
-      The internal listening port for Target Group Worker 1 - Deployment B.
+      The internal listening port for Target Group Master 1 - Deployment A.
     Type: Number
     
   PrivateIpAddressInstanceMaster1:
@@ -245,59 +204,29 @@ Parameters:
       The private IP address for Master 1.
     Type: String
     
-  PrivateIpAddressInstanceMaster2:
-    Default: 10.168.3.100
-    Description: >
-      The private IP address for Master 2.
-    Type: String
-    
-  PrivateIpAddressInstanceMaster3:
-    Default: 10.168.5.100
-    Description: >
-      The private IP address for Master 3.
-    Type: String
-    
-  ProtocolListenerWorker1:
+  ProtocolListenerMaster1:
     Default: HTTPS
     Description: >
-      The protocol for Listener Worker 1.
+      The protocol for Listener Master 1.
     Type: String
     
-  ProtocolTargetGroupWorker1:
+  ProtocolTargetGroupMaster1:
     Default: HTTP
     Description: >
-      The internal protocol for Target Group Worker 1.
+      The internal protocol for Target Group Master 1.
     Type: String
 
-  RecordSetNameKube:
-    Default: 'service-kube'
-    Description: >
-      The name of the Record Set for service 1.
-    Type: String
-  
   RecordSetName1:
-    Default: service-1
+    Default: openstack-dashboard
     Description: >
       The name of the Record Set for service 1.
     Type: String
   
-  RecordSetName2:
-    Default: service-2
-    Description: >
-      The name of the Record Set for service 2.
-    Type: String
-
-  RecordSetName3:
-    Default: service-3
-    Description: >
-      The name of the Record Set for service 3.
-    Type: String
-    
-  SecurityGroupCidrIpWorker1:
+  SecurityGroupCidrIpMaster1:
     Default: 0.0.0.0/0
     Description: >
-      Allowed CIDR block for external web access to the Cluster Worker 1 Load Balancer. 
-      It defines the block of IPs that can access the Cluster Worker Load Balancer 1 and, consequently, the application servers. 
+      Allowed CIDR block for external web access to the Cluster Master 1 Load Balancer. 
+      It defines the block of IPs that can access the Cluster Master Load Balancer 1 and, consequently, the application servers. 
       Set it to 0.0.0.0/0 to make it accessible from anywhere.
     Type: String
     
@@ -374,7 +303,6 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       ImageId: !Ref InstanceMasterImageId
       InstanceType: !Ref InstanceMasterInstanceType
-      KeyName: !Ref KeyName
       PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster1
       SecurityGroupIds:
         - !GetAtt VPC.DefaultSecurityGroup
@@ -387,42 +315,6 @@ Resources:
             sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
     Type: AWS::EC2::Instance
             
-  InstanceMaster2:
-    Properties:
-      IamInstanceProfile: !Ref InstanceProfile
-      ImageId: !Ref InstanceMasterImageId
-      InstanceType: !Ref InstanceMasterInstanceType
-      KeyName: !Ref KeyName
-      PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster2
-      SecurityGroupIds:
-        - !GetAtt VPC.DefaultSecurityGroup
-      SubnetId: !Ref SubnetPrivate2
-      UserData:
-        "Fn::Base64":
-          !Sub |
-            #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchDockerAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
-    Type: AWS::EC2::Instance
-
-  InstanceMaster3:
-    Properties:
-      IamInstanceProfile: !Ref InstanceProfile
-      ImageId: !Ref InstanceMasterImageId
-      InstanceType: !Ref InstanceMasterInstanceType
-      KeyName: !Ref KeyName
-      PrivateIpAddress: !Ref PrivateIpAddressInstanceMaster3
-      SecurityGroupIds:
-        - !GetAtt VPC.DefaultSecurityGroup
-      SubnetId: !Ref SubnetPrivate3
-      UserData:
-        "Fn::Base64":
-          !Sub |
-            #!/bin/sh
-            cd /tmp && curl https://amazon-ssm-${AWS::Region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o amazon-ssm-agent.rpm && sudo yum install -y amazon-ssm-agent.rpm
-            sudo yum install --assumeyes git && git clone --single-branch --branch ${BranchDockerAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFile} && ./GitRepository/${NodeInstallUrlFile} && rm --force --recursive GitRepository
-    Type: AWS::EC2::Instance
-
   InstanceProfile:
     Properties:
       Roles: [!Ref Role]
@@ -433,7 +325,6 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       ImageId: !Ref InstanceWorkerImageId
       InstanceType: !Ref InstanceWorkerInstanceType
-      KeyName: !Ref KeyName
       SubnetId: !Ref SubnetPrivate1
       UserData:
         "Fn::Base64":
@@ -448,7 +339,6 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       ImageId: !Ref InstanceWorkerImageId
       InstanceType: !Ref InstanceWorkerInstanceType
-      KeyName: !Ref KeyName
       SubnetId: !Ref SubnetPrivate2
       UserData:
         "Fn::Base64":
@@ -463,7 +353,6 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       ImageId: !Ref InstanceWorkerImageId
       InstanceType: !Ref InstanceWorkerInstanceType
-      KeyName: !Ref KeyName
       SubnetId: !Ref SubnetPrivate3
       UserData:
         "Fn::Base64":
@@ -476,46 +365,26 @@ Resources:
   InternetGateway:
     Type: AWS::EC2::InternetGateway
 
-  ListenerWorker1:
+  ListenerMaster1:
     Properties: 
       Certificates:
         - CertificateArn: !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${Identifier}'
       DefaultActions: 
         - ForwardConfig:
             TargetGroups:
-            - TargetGroupArn: !Ref TargetGroupWorker1A
-              Weight: 1
-            - TargetGroupArn: !Ref TargetGroupWorker1B
-              Weight: 0
-          Type: forward
-      LoadBalancerArn: !Ref LoadBalancerWorker1
-      Port: !Ref PortListenerWorker1
-      Protocol: !Ref ProtocolListenerWorker1
-    Type: AWS::ElasticLoadBalancingV2::Listener
- 
-  ListenerWorker1QA:
-    Properties: 
-      Certificates:
-        - CertificateArn: !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${Identifier}'
-      DefaultActions: 
-        - ForwardConfig:
-            TargetGroups:
-            - TargetGroupArn: !Ref TargetGroupWorker1A
-              Weight: 0
-            - TargetGroupArn: !Ref TargetGroupWorker1B
+            - TargetGroupArn: !Ref TargetGroupMaster1A
               Weight: 1
           Type: forward
-      LoadBalancerArn: !Ref LoadBalancerWorker1
-      Port: !Ref PortListenerWorker1QA
-      Protocol: !Ref ProtocolListenerWorker1
+      LoadBalancerArn: !Ref LoadBalancerMaster1
+      Port: !Ref PortListenerMaster1
+      Protocol: !Ref ProtocolListenerMaster1
     Type: AWS::ElasticLoadBalancingV2::Listener
  
-  LoadBalancerWorker1:
+  LoadBalancerMaster1:
     Properties: 
       SecurityGroups:
         - !GetAtt VPC.DefaultSecurityGroup
-        - !Ref SecurityGroupWorker1
-        - !Ref SecurityGroupWorker1QA
+        - !Ref SecurityGroupMaster1
       Subnets: 
         - !Ref SubnetPublic1
         - !Ref SubnetPublic2
@@ -546,8 +415,8 @@ Resources:
   RecordSet1:
     Properties: 
       AliasTarget: 
-        DNSName: !GetAtt LoadBalancerWorker1.DNSName
-        HostedZoneId: !GetAtt LoadBalancerWorker1.CanonicalHostedZoneID
+        DNSName: !GetAtt LoadBalancerMaster1.DNSName
+        HostedZoneId: !GetAtt LoadBalancerMaster1.CanonicalHostedZoneID
       HostedZoneName: !Sub '${HostedZoneName}.'
       Name: !Sub '${RecordSetName1}.${HostedZoneName}'
       Type: A
@@ -618,27 +487,15 @@ Resources:
       VpcId: !Ref VPC
     Type: AWS::EC2::RouteTable
 
-  SecurityGroupWorker1:
+  SecurityGroupMaster1:
     Properties:
-      GroupDescription: Allow access to the applications running on the cluster of workers for Service 1
+      GroupDescription: Allow access to the applications running on the cluster of masters for Service 1
       SecurityGroupIngress:
       - 
-        CidrIp: !Ref SecurityGroupCidrIpWorker1
-        FromPort: !Ref PortListenerWorker1
-        IpProtocol: !Ref IpProtocolListenerWorker1
-        ToPort: !Ref PortListenerWorker1
-      VpcId: !Ref VPC
-    Type: AWS::EC2::SecurityGroup
-      
-  SecurityGroupWorker1QA:
-    Properties:
-      GroupDescription: Allow access to the applications running on the cluster of workers for Service 1 - QA
-      SecurityGroupIngress:
-      - 
-        CidrIp: !Ref SecurityGroupCidrIpWorker1
-        FromPort: !Ref PortListenerWorker1QA
-        IpProtocol: !Ref IpProtocolListenerWorker1
-        ToPort: !Ref PortListenerWorker1QA
+        CidrIp: !Ref SecurityGroupCidrIpMaster1
+        FromPort: !Ref PortListenerMaster1
+        IpProtocol: !Ref IpProtocolListenerMaster1
+        ToPort: !Ref PortListenerMaster1
       VpcId: !Ref VPC
     Type: AWS::EC2::SecurityGroup
       
@@ -738,30 +595,14 @@ Resources:
       SubnetId: !Ref SubnetPublic3
     Type: AWS::EC2::SubnetRouteTableAssociation
 
-  TargetGroupWorker1A:
+  TargetGroupMaster1A:
     Properties: 
       Matcher:
-        HttpCode: !Ref HttpCodeTargetGroupWorker1
-      Port: !Ref PortTargetGroupWorker1A
-      Protocol: !Ref ProtocolTargetGroupWorker1
+        HttpCode: !Ref HttpCodeTargetGroupMaster1
+      Port: !Ref PortTargetGroupMaster1A
+      Protocol: !Ref ProtocolTargetGroupMaster1
       Targets: 
-        -   Id: !Ref InstanceWorker1
-        -   Id: !Ref InstanceWorker2
-        -   Id: !Ref InstanceWorker3
-      TargetType: instance
-      VpcId: !Ref VPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-
-  TargetGroupWorker1B:
-    Properties: 
-      Matcher:
-        HttpCode: !Ref HttpCodeTargetGroupWorker1
-      Port: !Ref PortTargetGroupWorker1B
-      Protocol: !Ref ProtocolTargetGroupWorker1
-      Targets: 
-        -   Id: !Ref InstanceWorker1
-        -   Id: !Ref InstanceWorker2
-        -   Id: !Ref InstanceWorker3
+        -   Id: !Ref InstanceMaster1
       TargetType: instance
       VpcId: !Ref VPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -776,3 +617,4 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
     Type: AWS::EC2::VPCGatewayAttachment
+
