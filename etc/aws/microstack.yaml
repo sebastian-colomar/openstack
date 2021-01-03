@@ -145,7 +145,7 @@ Parameters:
     Type: String
     
   InstanceMasterInstanceType:
-    Default: 'c5.xlarge'
+    Default: 't3a.large'
     Description: >
       Select Amazon EC2 instance type for the Cluster Master instances.
     Type: String
@@ -160,7 +160,7 @@ Parameters:
     Type: String
     
   InstanceWorkerInstanceType:
-    Default: 'c5.xlarge'
+    Default: 't3a.medium'
     Description: >
       Select Amazon EC2 instance type for the Cluster Worker instances.
     Type: String
