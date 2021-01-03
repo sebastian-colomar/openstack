@@ -19,7 +19,7 @@ Metadata:
         Label:
           default: Cluster Common Configuration
         Parameters:
-          - BranchOpenstackAWS
+          - BranchAWS
           - NodeInstallUrlPath
           - NodeInstallUrlFileMaster
           - NodeInstallUrlFileWorker
@@ -63,7 +63,7 @@ Metadata:
           - Identifier
           
     ParameterLabels:
-      BranchOpenstackAWS:
+      BranchAWS:
         default: The branch of the git repo to download the script for the common install of the nodes
       HostedZoneName:
         default: The name of the hosted zone that you want to create records in
@@ -118,7 +118,7 @@ Metadata:
                 
 Parameters:
 
-  BranchOpenstackAWS:
+  BranchAWS:
     Default: "main"
     Description: >
       The branch of the git repo to download the script for the common install of the nodes.
