@@ -320,7 +320,7 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileMaster} && ./GitRepository/${NodeInstallUrlFileMaster} && rm --force --recursive GitRepository
+            git clone --single-branch --branch ${BranchAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileMaster} && ./GitRepository/${NodeInstallUrlFileMaster} && rm --force --recursive GitRepository
             #snap install microstack --beta --devmode
     Type: AWS::EC2::Instance
             
@@ -339,7 +339,7 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
+            git clone --single-branch --branch ${BranchAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
             #snap install microstack --beta --devmode
     Type: AWS::EC2::Instance
 
@@ -353,7 +353,7 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
+            git clone --single-branch --branch ${BranchAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
             #snap install microstack --beta --devmode
     Type: AWS::EC2::Instance
 
@@ -367,7 +367,7 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/sh
-            git clone --single-branch --branch ${BranchOpenstackAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
+            git clone --single-branch --branch ${BranchAWS} ${NodeInstallUrlPath} GitRepository && chmod +x GitRepository/${NodeInstallUrlFileWorker} && ./GitRepository/${NodeInstallUrlFileWorker} && rm --force --recursive GitRepository
             #snap install microstack --beta --devmode
     Type: AWS::EC2::Instance
 
