@@ -6,14 +6,14 @@
 #########################################################################
 set +x && test "$debug" = true && set -x				;
 #########################################################################
-test -n "$A"	                && export A                 || exit 100 ;
-test -n "$B"	                && export B                 || exit 101 ;
-test -n "$branch" && export branch || exit 102                          ;
-test -n "$debug" 		&& export debug	            || exit 103	;
-test -n "$domain" 		&& export domain	    || exit 104	;
-test -n "$HostedZoneName"	&& export HostedZoneName    || exit 105 ;
-test -n "$mode"                 && export mode	            || exit 106	;
-test -n "$stack"                && export stack	            || exit 107	;
+test -n "$A"	                && export A                 || exit 301 ;
+test -n "$B"	                && export B                 || exit 302 ;
+test -n "$branch" && export branch || exit 303                          ;
+test -n "$debug" 		&& export debug	            || exit 304	;
+test -n "$domain" 		&& export domain	    || exit 305	;
+test -n "$HostedZoneName"	&& export HostedZoneName    || exit 306 ;
+test -n "$mode"                 && export mode	            || exit 307	;
+test -n "$stack"                && export stack	            || exit 308	;
 #########################################################################
 file=common-functions.sh						;
 path=lib                                 				;
