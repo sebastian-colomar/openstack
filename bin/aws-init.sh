@@ -21,7 +21,6 @@ test -n "$TypeWorker"		&& export TypeWorker 	    || exit 100 ;
 BranchAWS=$branch                                                       ;
 caps=CAPABILITY_IAM							;
 NodeInstallUrlPath=https://$domain/$A					;
-template_url=https://$s3domain/$branch_docker_aws/$template		;
 #########################################################################
 path=etc/aws								;
 #########################################################################
