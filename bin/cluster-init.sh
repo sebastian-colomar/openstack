@@ -31,7 +31,7 @@ rm --force --recursive $uuid                                            ;
 export -f send_command							;
 export -f send_list_command						;
 export -f send_wait_targets						;
-export -f service_wait_targets						;
+export -f send_list_targets						;
 #########################################################################
 file=cluster-$mode-init.sh						;
 path=bin								;
