@@ -16,7 +16,7 @@ targets=" InstanceMaster1 " 						;
 #########################################################################
 service_wait_targets $service $sleep $stack "$targets"			;
 #########################################################################
-command=" test -f /tmp/microstack_init_finished "                       ;
+command=" ls -l /tmp/microstack_init_finished 2> /dev/null "            ;
 send_wait_targets "$command" $sleep $stack "$targets"			;
 #########################################################################
 command=" 								\
@@ -32,7 +32,7 @@ targets=" InstanceWorker1 InstanceWorker2 InstanceWorker3 " 		;
 #########################################################################
 service_wait_targets $service $sleep $stack "$targets"			;
 #########################################################################
-command=" test -f /tmp/microstack_install_finished "                    ;
+command=" ls -l /tmp/microstack_install_finished 2> /dev/null "         ;
 send_wait_targets "$command" $sleep $stack "$targets"			;
 #########################################################################
 command=" microstack init --auto --compute --join $token_worker "       ;
