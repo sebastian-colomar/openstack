@@ -33,5 +33,5 @@ command=" ls -l /tmp/microstack_install_finished 2> /dev/null "         ;
 send_wait_targets "$command" $sleep $stack "$targets"			;
 #########################################################################
 command=" microstack init --auto --compute --join $token_worker "       ;
-send_wait_targets "$command" $sleep $stack "$targets"			;
+send_list_targets "$command" $sleep $stack "$targets"			;
 #########################################################################
