@@ -35,3 +35,9 @@ send_wait_targets "$command" $sleep $stack "$targets"			;
 command=" microstack init --auto --compute --join $token_worker "       ;
 send_list_targets "$command" $sleep $stack "$targets"			;
 #########################################################################
+targets=" InstanceMaster1 " 						;
+#########################################################################
+command=" snap get microstack config.credentials.keystone-password "    ;
+send_wait_targets "$command" $sleep $stack "$targets"			;
+#########################################################################
+
