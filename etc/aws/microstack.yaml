@@ -202,7 +202,7 @@ Parameters:
     Type: Number
     
   PortTargetGroupMaster1A:
-    Default: 80
+    Default: 443
     Description: >
       The internal listening port for Target Group Master 1 - Deployment A.
     Type: Number
@@ -220,7 +220,7 @@ Parameters:
     Type: String
     
   ProtocolTargetGroupMaster1:
-    Default: HTTP
+    Default: HTTPS
     Description: >
       The internal protocol for Target Group Master 1.
     Type: String
