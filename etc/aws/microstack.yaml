@@ -131,7 +131,7 @@ Parameters:
     Type: String
 
   Identifier:
-    Default: 'c3f3310b-f4ed-4874-8849-bd5c2cfe001f'
+    Default: '62bfcd52-7375-4ffc-9ed8-345488c71b41'
     Description: >
       The Identifier of the certificate you want to use.
     Type: String
